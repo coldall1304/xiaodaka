@@ -26,6 +26,10 @@ export default function DashboardPage() {
     await checkIn(planId)
   }
 
+  // 计算今日任务完成率
+  const completedToday = plans.filter(p => p.todayCompleted).length
+  const totalPlans = plans.length
+
   if (loading) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-gray-50">
@@ -60,7 +64,7 @@ export default function DashboardPage() {
           </Card>
           <Card className="text-center p-4">
             <div className="text-3xl mb-1">✅</div>
-            <div className="text-2xl font-bold text-green-500">{stats?.todayCheckIns || 0}/{stats?.activePlans || 0}</div>
+            <div className="text-2xl font-bold text-green-500">{completedToday}/{totalPlans}</div>
             <div className="text-sm text-gray-500">今日任务</div>
           </Card>
           <Card className="text-center p-4">
@@ -114,19 +118,27 @@ export default function DashboardPage() {
             <div className="space-y-3">
               {plans.map(plan => (
                 <div key={plan.id} className="flex items-center justify-between p-4 bg-gray-50 rounded-lg">
-                  <div className="flex items-center gap-3">
-                    <div className="w-3 h-10 rounded-full" style={{ backgroundColor: plan.color }} />
-                    <div>
+                  <div className="flex items-center gap-3 flex-1">
+                    <div className="w-3 h-10 rounded-full flex-shrink-0" style={{ backgroundColor: plan.color }} />
+                    <div className="flex-1 min-w-0">
                       <div className="font-medium text-gray-900">{plan.title}</div>
-                      <div className="text-sm text-gray-500">
-                        {plan.description || '连续打卡中'}
+                      {plan.description && (
+                        <div className="text-sm text-gray-500 truncate mt-0.5">
+                          {plan.description}
+                        </div>
+                      )}
+                      <div className="flex items-center gap-3 mt-1 text-xs text-gray-400">
+                        <span>🔥 连续 {plan.streak} 天</span>
+                        {plan.startTime && plan.endTime && (
+                          <span>⏰ {plan.startTime} - {plan.endTime}</span>
+                        )}
                       </div>
                     </div>
                   </div>
                   <button
                     onClick={() => handleCheckIn(plan.id)}
                     disabled={plan.todayCompleted}
-                    className={`px-4 py-2 rounded-lg text-sm font-medium ${
+                    className={`px-4 py-2 rounded-lg text-sm font-medium flex-shrink-0 ml-3 ${
                       plan.todayCompleted
                         ? 'bg-green-100 text-green-600'
                         : 'bg-green-500 text-white hover:bg-green-600'

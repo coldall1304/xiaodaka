@@ -36,7 +36,20 @@ export async function GET(request: NextRequest) {
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json()
-    const { userId, title, description, category, color, startDate, endDate, frequency, customDays, reminderTime } = body
+    const { 
+      userId, 
+      title, 
+      description, 
+      category, 
+      color, 
+      startDate, 
+      endDate, 
+      frequency, 
+      customDays, 
+      reminderTime,
+      startTime,
+      endTime 
+    } = body
 
     if (!userId || !title) {
       return NextResponse.json({ error: '缺少必要参数' }, { status: 400 })
@@ -54,6 +67,8 @@ export async function POST(request: NextRequest) {
         frequency: frequency || 'daily',
         customDays,
         reminderTime,
+        startTime,
+        endTime,
       },
     })
 

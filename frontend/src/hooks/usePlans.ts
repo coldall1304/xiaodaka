@@ -9,6 +9,8 @@ interface Plan {
   isActive: boolean
   frequency: string
   reminderTime?: string
+  startTime?: string
+  endTime?: string
   streak: number
   todayCompleted: boolean
 }
