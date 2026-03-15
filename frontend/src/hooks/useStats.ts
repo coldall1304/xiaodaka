@@ -1,4 +1,4 @@
-import { useState, useCallback } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 
 interface Stats {
   totalCheckIns: number
@@ -14,34 +14,29 @@ interface UseStatsReturn {
   stats: Stats | null
   loading: boolean
   error: string | null
-  fetchStats: (userId: string) => Promise<void>
 }
 
-export function useStats(): UseStatsReturn {
+export function useStats(userId?: string): UseStatsReturn {
   const [stats, setStats] = useState<Stats | null>(null)
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
-  const fetchStats = useCallback(async (userId: string) => {
-    setLoading(true)
-    setError(null)
-
-    try {
-      const res = await fetch(`/api/stats?userId=${userId}`)
-      const data = await res.json()
-
-      if (!res.ok) {
-        setError(data.error || '获取统计失败')
-        return
-      }
-
-      setStats(data)
-    } catch (err) {
-      setError('网络错误')
-    } finally {
-      setLoading(false)
+  // 自动加载统计数据
+  useEffect(() => {
+    if (userId) {
+      setLoading(true)
+      fetch(`/api/stats?userId=${userId}`)
+        .then(res => res.json())
+        .then(data => {
+          setStats(data)
+        })
+        .catch(err => {
+          console.error('Failed to fetch stats:', err)
+          setError('获取统计失败')
+        })
+        .finally(() => setLoading(false))
     }
-  }, [])
+  }, [userId])
 
-  return { stats, loading, error, fetchStats }
+  return { stats, loading, error }
 }

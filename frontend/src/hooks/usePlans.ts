@@ -1,8 +1,9 @@
-import { useState, useCallback } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 
 interface Plan {
   id: string
   title: string
+  description?: string
   category: string
   color: string
   isActive: boolean
@@ -16,44 +17,43 @@ interface UsePlansReturn {
   plans: Plan[]
   loading: boolean
   error: string | null
-  fetchPlans: (userId: string) => Promise<void>
-  addPlan: (data: Omit<Plan, 'id' | 'streak' | 'todayCompleted'>) => Promise<boolean>
+  addPlan: (data: any) => Promise<boolean>
   updatePlan: (id: string, data: Partial<Plan>) => Promise<boolean>
   deletePlan: (id: string) => Promise<boolean>
   checkIn: (planId: string) => Promise<boolean>
 }
 
-export function usePlans(): UsePlansReturn {
+export function usePlans(userId?: string): UsePlansReturn {
   const [plans, setPlans] = useState<Plan[]>([])
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
-  const fetchPlans = useCallback(async (userId: string) => {
-    setLoading(true)
-    setError(null)
-
-    try {
-      const res = await fetch(`/api/plans?userId=${userId}`)
-      const data = await res.json()
-
-      if (!res.ok) {
-        setError(data.error || '获取计划失败')
-        return
-      }
-
-      setPlans(data.plans.map((p: any) => ({
-        ...p,
-        streak: 0, // TODO: 计算连续天数
-        todayCompleted: p.checkIns?.length > 0,
-      })))
-    } catch (err) {
-      setError('网络错误')
-    } finally {
-      setLoading(false)
+  // 自动加载计划列表
+  useEffect(() => {
+    if (userId) {
+      setLoading(true)
+      fetch(`/api/plans?userId=${userId}`)
+        .then(res => res.json())
+        .then(data => {
+          if (data.plans) {
+            setPlans(data.plans.map((p: any) => ({
+              ...p,
+              streak: 0, // TODO: 计算连续天数
+              todayCompleted: p.checkIns?.length > 0,
+            })))
+          }
+        })
+        .catch(err => {
+          console.error('Failed to fetch plans:', err)
+          setError('获取计划失败')
+        })
+        .finally(() => setLoading(false))
     }
-  }, [])
+  }, [userId])
 
-  const addPlan = useCallback(async (data: Omit<Plan, 'id' | 'streak' | 'todayCompleted'>): Promise<boolean> => {
+  const addPlan = useCallback(async (data: any): Promise<boolean> => {
+    if (!userId) return false
+
     setLoading(true)
     setError(null)
 
@@ -61,7 +61,7 @@ export function usePlans(): UsePlansReturn {
       const res = await fetch('/api/plans', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(data),
+        body: JSON.stringify({ ...data, userId }),
       })
 
       const result = await res.json()
@@ -83,7 +83,7 @@ export function usePlans(): UsePlansReturn {
     } finally {
       setLoading(false)
     }
-  }, [])
+  }, [userId])
 
   const updatePlan = useCallback(async (id: string, data: Partial<Plan>): Promise<boolean> => {
     setLoading(true)
@@ -139,6 +139,8 @@ export function usePlans(): UsePlansReturn {
   }, [])
 
   const checkIn = useCallback(async (planId: string): Promise<boolean> => {
+    if (!userId) return false
+
     setError(null)
 
     try {
@@ -147,7 +149,7 @@ export function usePlans(): UsePlansReturn {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           planId,
-          userId: 'current-user', // TODO: 从 auth 获取
+          userId,
         }),
       })
 
@@ -169,7 +171,7 @@ export function usePlans(): UsePlansReturn {
       setError('网络错误')
       return false
     }
-  }, [])
+  }, [userId])
 
-  return { plans, loading, error, fetchPlans, addPlan, updatePlan, deletePlan, checkIn }
+  return { plans, loading, error, addPlan, updatePlan, deletePlan, checkIn }
 }

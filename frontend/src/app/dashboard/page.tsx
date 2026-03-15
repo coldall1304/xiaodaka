@@ -3,41 +3,27 @@
 import { useState, useEffect } from 'react'
 import Link from 'next/link'
 import { Header } from '@/components/Header'
-import { Button } from '@/components/Button'
 import { Card } from '@/components/Card'
-
-interface Plan {
-  id: string
-  title: string
-  category: string
-  color: string
-  isActive: boolean
-  streak: number
-  todayCompleted: boolean
-}
+import { useAuth } from '@/hooks/useAuth'
+import { usePlans } from '@/hooks/usePlans'
+import { useStats } from '@/hooks/useStats'
+import AddPlanModal from '@/components/AddPlanModal'
 
 export default function DashboardPage() {
-  const [plans, setPlans] = useState<Plan[]>([])
-  const [loading, setLoading] = useState(true)
-  const [stats] = useState({
-    streak: 7,
-    totalPlans: 15,
-    userName: '用户',
-  })
+  const { user, loading: authLoading } = useAuth()
+  const { plans, loading: plansLoading, addPlan, checkIn } = usePlans(user?.id)
+  const { stats, loading: statsLoading } = useStats(user?.id)
+  const [showAddModal, setShowAddModal] = useState(false)
 
-  useEffect(() => {
-    setPlans([
-      { id: '1', title: '每天背单词 30 个', category: 'study', color: '#3B82F6', isActive: true, streak: 15, todayCompleted: true },
-      { id: '2', title: '晨跑 5 公里', category: 'exercise', color: '#10B981', isActive: true, streak: 8, todayCompleted: false },
-      { id: '3', title: '阅读 30 分钟', category: 'study', color: '#8B5CF6', isActive: true, streak: 22, todayCompleted: false },
-    ])
-    setLoading(false)
-  }, [])
+  const loading = authLoading || plansLoading || statsLoading
+
+  const handleAddPlan = async (planData: any) => {
+    await addPlan(planData)
+    setShowAddModal(false)
+  }
 
   const handleCheckIn = async (planId: string) => {
-    setPlans(plans.map(p => 
-      p.id === planId ? { ...p, todayCompleted: true, streak: p.streak + 1 } : p
-    ))
+    await checkIn(planId)
   }
 
   if (loading) {
@@ -54,9 +40,9 @@ export default function DashboardPage() {
   return (
     <div className="min-h-screen bg-gray-50">
       <Header
-        streak={stats.streak}
-        totalPlans={stats.totalPlans}
-        userName={stats.userName}
+        streak={stats?.currentStreak || 0}
+        totalPlans={stats?.activePlans || 0}
+        userName={user?.name || '用户'}
       />
 
       <main className="max-w-6xl mx-auto px-4 py-6 space-y-6">
@@ -64,22 +50,22 @@ export default function DashboardPage() {
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
           <Card className="text-center p-4">
             <div className="text-3xl mb-1">📚</div>
-            <div className="text-2xl font-bold text-gray-800">45</div>
+            <div className="text-2xl font-bold text-gray-800">{stats?.totalCheckIns || 0}</div>
             <div className="text-sm text-gray-500">总打卡</div>
           </Card>
           <Card className="text-center p-4">
             <div className="text-3xl mb-1">🔥</div>
-            <div className="text-2xl font-bold text-orange-500">{stats.streak}</div>
+            <div className="text-2xl font-bold text-orange-500">{stats?.currentStreak || 0}</div>
             <div className="text-sm text-gray-500">连续天数</div>
           </Card>
           <Card className="text-center p-4">
             <div className="text-3xl mb-1">✅</div>
-            <div className="text-2xl font-bold text-green-500">3/5</div>
+            <div className="text-2xl font-bold text-green-500">{stats?.todayCheckIns || 0}/{stats?.activePlans || 0}</div>
             <div className="text-sm text-gray-500">今日任务</div>
           </Card>
           <Card className="text-center p-4">
             <div className="text-3xl mb-1">🏆</div>
-            <div className="text-2xl font-bold text-primary-600">320</div>
+            <div className="text-2xl font-bold text-primary-600">{stats?.totalPoints || 0}</div>
             <div className="text-sm text-gray-500">积分</div>
           </Card>
         </div>
@@ -105,34 +91,61 @@ export default function DashboardPage() {
         <Card>
           <div className="flex items-center justify-between mb-4">
             <h2 className="text-lg font-semibold text-gray-900">我的计划</h2>
+            <button
+              onClick={() => setShowAddModal(true)}
+              className="px-4 py-2 bg-primary-600 text-white rounded-lg hover:bg-primary-700 transition"
+            >
+              + 添加计划
+            </button>
           </div>
 
-          <div className="space-y-3">
-            {plans.map(plan => (
-              <div key={plan.id} className="flex items-center justify-between p-4 bg-gray-50 rounded-lg">
-                <div className="flex items-center gap-3">
-                  <div className="w-3 h-10 rounded-full" style={{ backgroundColor: plan.color }} />
-                  <div>
-                    <div className="font-medium text-gray-900">{plan.title}</div>
-                    <div className="text-sm text-gray-500">连续 {plan.streak} 天</div>
+          {plans.length === 0 ? (
+            <div className="text-center py-12">
+              <div className="text-6xl mb-4">📝</div>
+              <p className="text-gray-500 mb-4">还没有学习计划</p>
+              <button
+                onClick={() => setShowAddModal(true)}
+                className="px-6 py-2 bg-primary-600 text-white rounded-lg hover:bg-primary-700"
+              >
+                创建第一个计划
+              </button>
+            </div>
+          ) : (
+            <div className="space-y-3">
+              {plans.map(plan => (
+                <div key={plan.id} className="flex items-center justify-between p-4 bg-gray-50 rounded-lg">
+                  <div className="flex items-center gap-3">
+                    <div className="w-3 h-10 rounded-full" style={{ backgroundColor: plan.color }} />
+                    <div>
+                      <div className="font-medium text-gray-900">{plan.title}</div>
+                      <div className="text-sm text-gray-500">
+                        {plan.description || '连续打卡中'}
+                      </div>
+                    </div>
                   </div>
+                  <button
+                    onClick={() => handleCheckIn(plan.id)}
+                    disabled={plan.todayCompleted}
+                    className={`px-4 py-2 rounded-lg text-sm font-medium ${
+                      plan.todayCompleted
+                        ? 'bg-green-100 text-green-600'
+                        : 'bg-green-500 text-white hover:bg-green-600'
+                    }`}
+                  >
+                    {plan.todayCompleted ? '✓ 已打卡' : '打卡'}
+                  </button>
                 </div>
-                <button
-                  onClick={() => handleCheckIn(plan.id)}
-                  disabled={plan.todayCompleted}
-                  className={`px-4 py-2 rounded-lg text-sm font-medium ${
-                    plan.todayCompleted
-                      ? 'bg-green-100 text-green-600'
-                      : 'bg-green-500 text-white hover:bg-green-600'
-                  }`}
-                >
-                  {plan.todayCompleted ? '✓ 已打卡' : '打卡'}
-                </button>
-              </div>
-            ))}
-          </div>
+              ))}
+            </div>
+          )}
         </Card>
       </main>
+
+      <AddPlanModal
+        isOpen={showAddModal}
+        onClose={() => setShowAddModal(false)}
+        onAdd={handleAddPlan}
+      />
     </div>
   )
 }
