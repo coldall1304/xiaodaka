@@ -67,6 +67,7 @@ export default function DashboardPage() {
         streak={stats?.currentStreak || 0}
         totalPlans={stats?.activePlans || 0}
         userName={user?.name || '用户'}
+        userId={user?.id}
       />
 
       <main className="max-w-6xl mx-auto px-4 py-6 space-y-6">
