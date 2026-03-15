@@ -8,18 +8,31 @@ import { useAuth } from '@/hooks/useAuth'
 import { usePlans } from '@/hooks/usePlans'
 import { useStats } from '@/hooks/useStats'
 import AddPlanModal from '@/components/AddPlanModal'
+import AIPlanModal from '@/components/AIPlanModal'
 
 export default function DashboardPage() {
   const { user, loading: authLoading } = useAuth()
   const { plans, loading: plansLoading, addPlan, checkIn } = usePlans(user?.id)
   const { stats, loading: statsLoading } = useStats(user?.id)
   const [showAddModal, setShowAddModal] = useState(false)
+  const [showAIModal, setShowAIModal] = useState(false)
 
   const loading = authLoading || plansLoading || statsLoading
 
   const handleAddPlan = async (planData: any) => {
     await addPlan(planData)
     setShowAddModal(false)
+  }
+
+  const handleAIGenerated = async (planData: any) => {
+    if (planData.edit) {
+      // 打开编辑模态框
+      setShowAddModal(true)
+      // 预填充数据
+      // TODO: 传递数据给 AddPlanModal
+    } else {
+      await addPlan(planData)
+    }
   }
 
   const handleCheckIn = async (planId: string) => {
@@ -123,24 +136,42 @@ export default function DashboardPage() {
         <Card>
           <div className="flex items-center justify-between mb-4">
             <h2 className="text-lg font-semibold text-gray-900">我的计划</h2>
-            <button
-              onClick={() => setShowAddModal(true)}
-              className="px-4 py-2 bg-primary-600 text-white rounded-lg hover:bg-primary-700 transition"
-            >
-              + 添加计划
-            </button>
+            <div className="flex gap-2">
+              <button
+                onClick={() => setShowAIModal(true)}
+                className="px-4 py-2 bg-gradient-to-r from-purple-500 to-pink-500 text-white rounded-lg hover:from-purple-600 hover:to-pink-600 transition flex items-center gap-1"
+              >
+                <span>🤖</span>
+                AI创建
+              </button>
+              <button
+                onClick={() => setShowAddModal(true)}
+                className="px-4 py-2 bg-primary-600 text-white rounded-lg hover:bg-primary-700 transition"
+              >
+                + 添加计划
+              </button>
+            </div>
           </div>
 
           {plans.length === 0 ? (
             <div className="text-center py-12">
               <div className="text-6xl mb-4">📝</div>
               <p className="text-gray-500 mb-4">还没有学习计划</p>
-              <button
-                onClick={() => setShowAddModal(true)}
-                className="px-6 py-2 bg-primary-600 text-white rounded-lg hover:bg-primary-700"
-              >
-                创建第一个计划
-              </button>
+              <div className="flex gap-3 justify-center">
+                <button
+                  onClick={() => setShowAIModal(true)}
+                  className="px-6 py-2 bg-gradient-to-r from-purple-500 to-pink-500 text-white rounded-lg hover:from-purple-600 hover:to-pink-600 flex items-center gap-2"
+                >
+                  <span>🤖</span>
+                  AI 创建
+                </button>
+                <button
+                  onClick={() => setShowAddModal(true)}
+                  className="px-6 py-2 bg-primary-600 text-white rounded-lg hover:bg-primary-700"
+                >
+                  手动创建
+                </button>
+              </div>
             </div>
           ) : (
             <div className="space-y-3">
@@ -185,6 +216,12 @@ export default function DashboardPage() {
         isOpen={showAddModal}
         onClose={() => setShowAddModal(false)}
         onAdd={handleAddPlan}
+      />
+
+      <AIPlanModal
+        isOpen={showAIModal}
+        onClose={() => setShowAIModal(false)}
+        onGenerated={handleAIGenerated}
       />
     </div>
   )
