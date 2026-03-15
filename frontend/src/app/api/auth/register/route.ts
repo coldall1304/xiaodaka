@@ -48,6 +48,19 @@ export async function POST(request: NextRequest) {
       },
     })
 
+    // 给新用户赠送2天会员试用
+    const membershipEndDate = new Date()
+    membershipEndDate.setDate(membershipEndDate.getDate() + 2)
+
+    await prisma.membership.create({
+      data: {
+        userId: user.id,
+        type: 'trial',
+        endDate: membershipEndDate,
+        isActive: true,
+      },
+    })
+
     return NextResponse.json({
       user: {
         id: user.id,

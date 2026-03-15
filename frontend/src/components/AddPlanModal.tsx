@@ -16,10 +16,17 @@ interface AddPlanModalProps {
   onAdd: (plan: any) => void
 }
 
+// 预设类别（对标原网站）
+const PRESET_CATEGORIES = [
+  '语文', '数学', '英语', '物理', '化学', '生物',
+  '历史', '地理', '政治', '道德与法治', '信息技术',
+  '运动', '娱乐', '技能', '其他'
+]
+
 export default function AddPlanModal({ isOpen, onClose, onAdd }: AddPlanModalProps) {
   const [title, setTitle] = useState('')
   const [description, setDescription] = useState('')
-  const [category, setCategory] = useState('study')
+  const [category, setCategory] = useState('')
   const [frequency, setFrequency] = useState('daily')
   const [startDate, setStartDate] = useState(new Date().toISOString().split('T')[0])
   const [startTime, setStartTime] = useState('09:00')
@@ -29,54 +36,46 @@ export default function AddPlanModal({ isOpen, onClose, onAdd }: AddPlanModalPro
   const [loading, setLoading] = useState(false)
   const fileInputRef = useRef<HTMLInputElement>(null)
 
-  // 处理文件上传
   const handleFileSelect = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = e.target.files
     if (!files || files.length === 0) return
 
-    // 限制最多3个附件
     if (attachments.length + files.length > 3) {
       alert('最多只能上传3个附件')
       return
     }
 
     for (const file of Array.from(files)) {
-      // 验证文件大小（50MB）
       if (file.size > 50 * 1024 * 1024) {
         alert(`文件 ${file.name} 超过 50MB 限制`)
         continue
       }
 
-      // 添加到列表（模拟上传）
       const attachment: Attachment = {
         id: `file_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
         name: file.name,
         type: file.type,
         size: file.size,
-        url: URL.createObjectURL(file), // 本地预览
+        url: URL.createObjectURL(file),
       }
       setAttachments(prev => [...prev, attachment])
     }
 
-    // 清空 input
     if (fileInputRef.current) {
       fileInputRef.current.value = ''
     }
   }
 
-  // 删除附件
   const handleRemoveAttachment = (id: string) => {
     setAttachments(prev => prev.filter(a => a.id !== id))
   }
 
-  // 格式化文件大小
   const formatFileSize = (bytes: number) => {
     if (bytes < 1024) return `${bytes} B`
     if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`
     return `${(bytes / (1024 * 1024)).toFixed(1)} MB`
   }
 
-  // 获取文件图标
   const getFileIcon = (type: string) => {
     if (type.startsWith('image/')) return '🖼️'
     if (type.startsWith('audio/')) return '🎵'
@@ -115,6 +114,7 @@ export default function AddPlanModal({ isOpen, onClose, onAdd }: AddPlanModalPro
       onClose()
       setTitle('')
       setDescription('')
+      setCategory('')
       setAttachments([])
     } catch (error) {
       console.error('Failed to add plan:', error)
@@ -191,32 +191,22 @@ export default function AddPlanModal({ isOpen, onClose, onAdd }: AddPlanModalPro
             </div>
           </div>
 
-          {/* 分类 */}
+          {/* 类别标签 - 改为下拉选择 */}
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">
-              分类 <span className="text-red-500">*</span>
+              类别标签 <span className="text-red-500">*</span>
             </label>
-            <div className="grid grid-cols-4 gap-2">
-              {[
-                { value: 'study', label: '📚 学习' },
-                { value: 'exercise', label: '🏃 运动' },
-                { value: 'habit', label: '💪 习惯' },
-                { value: 'other', label: '📌 其他' },
-              ].map(cat => (
-                <button
-                  key={cat.value}
-                  type="button"
-                  onClick={() => setCategory(cat.value)}
-                  className={`py-2 px-3 rounded-lg text-sm font-medium transition ${
-                    category === cat.value
-                      ? 'bg-primary-100 text-primary-700 border-2 border-primary-500'
-                      : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
-                  }`}
-                >
-                  {cat.label}
-                </button>
+            <select
+              value={category}
+              onChange={(e) => setCategory(e.target.value)}
+              className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 outline-none"
+              required
+            >
+              <option value="">请选择类别</option>
+              {PRESET_CATEGORIES.map(cat => (
+                <option key={cat} value={cat}>{cat}</option>
               ))}
-            </div>
+            </select>
           </div>
 
           {/* 频率 */}
@@ -309,7 +299,6 @@ export default function AddPlanModal({ isOpen, onClose, onAdd }: AddPlanModalPro
               className="hidden"
             />
 
-            {/* 已上传的附件列表 */}
             {attachments.length > 0 && (
               <div className="mt-3 space-y-2">
                 {attachments.map(file => (
@@ -343,7 +332,7 @@ export default function AddPlanModal({ isOpen, onClose, onAdd }: AddPlanModalPro
             </button>
             <button
               type="submit"
-              disabled={loading || !title.trim()}
+              disabled={loading || !title.trim() || !category}
               className="flex-1 py-3 bg-primary-600 text-white rounded-lg hover:bg-primary-700 transition disabled:opacity-50 disabled:cursor-not-allowed"
             >
               {loading ? '添加中...' : '添加计划'}
