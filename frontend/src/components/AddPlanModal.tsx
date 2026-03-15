@@ -1,6 +1,14 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useRef } from 'react'
+
+interface Attachment {
+  id: string
+  name: string
+  type: string
+  size: number
+  url: string
+}
 
 interface AddPlanModalProps {
   isOpen: boolean
@@ -17,7 +25,65 @@ export default function AddPlanModal({ isOpen, onClose, onAdd }: AddPlanModalPro
   const [startTime, setStartTime] = useState('09:00')
   const [endTime, setEndTime] = useState('10:00')
   const [enableTime, setEnableTime] = useState(false)
+  const [attachments, setAttachments] = useState<Attachment[]>([])
   const [loading, setLoading] = useState(false)
+  const fileInputRef = useRef<HTMLInputElement>(null)
+
+  // 处理文件上传
+  const handleFileSelect = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = e.target.files
+    if (!files || files.length === 0) return
+
+    // 限制最多3个附件
+    if (attachments.length + files.length > 3) {
+      alert('最多只能上传3个附件')
+      return
+    }
+
+    for (const file of Array.from(files)) {
+      // 验证文件大小（50MB）
+      if (file.size > 50 * 1024 * 1024) {
+        alert(`文件 ${file.name} 超过 50MB 限制`)
+        continue
+      }
+
+      // 添加到列表（模拟上传）
+      const attachment: Attachment = {
+        id: `file_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
+        name: file.name,
+        type: file.type,
+        size: file.size,
+        url: URL.createObjectURL(file), // 本地预览
+      }
+      setAttachments(prev => [...prev, attachment])
+    }
+
+    // 清空 input
+    if (fileInputRef.current) {
+      fileInputRef.current.value = ''
+    }
+  }
+
+  // 删除附件
+  const handleRemoveAttachment = (id: string) => {
+    setAttachments(prev => prev.filter(a => a.id !== id))
+  }
+
+  // 格式化文件大小
+  const formatFileSize = (bytes: number) => {
+    if (bytes < 1024) return `${bytes} B`
+    if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`
+    return `${(bytes / (1024 * 1024)).toFixed(1)} MB`
+  }
+
+  // 获取文件图标
+  const getFileIcon = (type: string) => {
+    if (type.startsWith('image/')) return '🖼️'
+    if (type.startsWith('audio/')) return '🎵'
+    if (type.startsWith('video/')) return '🎬'
+    if (type === 'application/pdf') return '📄'
+    return '📎'
+  }
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -30,6 +96,13 @@ export default function AddPlanModal({ isOpen, onClose, onAdd }: AddPlanModalPro
         category,
         frequency,
         startDate: new Date(startDate).toISOString(),
+        attachments: attachments.map(a => ({
+          id: a.id,
+          name: a.name,
+          type: a.type,
+          size: a.size,
+          url: a.url,
+        })),
       }
 
       if (enableTime) {
@@ -42,6 +115,7 @@ export default function AddPlanModal({ isOpen, onClose, onAdd }: AddPlanModalPro
       onClose()
       setTitle('')
       setDescription('')
+      setAttachments([])
     } catch (error) {
       console.error('Failed to add plan:', error)
     } finally {
@@ -205,6 +279,55 @@ export default function AddPlanModal({ isOpen, onClose, onAdd }: AddPlanModalPro
                 <p className="text-xs text-gray-500">
                   💡 设置计划的固定时间段，如 19:00-20:30
                 </p>
+              </div>
+            )}
+          </div>
+
+          {/* 附件上传 */}
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">
+              📎 附件 <span className="text-gray-400">(可选，最多3个)</span>
+            </label>
+            
+            <div 
+              onClick={() => fileInputRef.current?.click()}
+              className="border-2 border-dashed border-gray-300 rounded-lg p-6 text-center cursor-pointer hover:border-primary-500 hover:bg-primary-50/50 transition"
+            >
+              <div className="text-4xl mb-2">📤</div>
+              <p className="text-sm text-gray-600">点击上传或拖拽文件到此处</p>
+              <p className="text-xs text-gray-400 mt-1">
+                支持图片、音频、视频、PDF（单个最大50MB）
+              </p>
+            </div>
+
+            <input
+              ref={fileInputRef}
+              type="file"
+              multiple
+              accept="image/*,audio/*,video/*,.pdf"
+              onChange={handleFileSelect}
+              className="hidden"
+            />
+
+            {/* 已上传的附件列表 */}
+            {attachments.length > 0 && (
+              <div className="mt-3 space-y-2">
+                {attachments.map(file => (
+                  <div key={file.id} className="flex items-center gap-2 p-2 bg-gray-50 rounded-lg">
+                    <span className="text-2xl">{getFileIcon(file.type)}</span>
+                    <div className="flex-1 min-w-0">
+                      <div className="text-sm font-medium text-gray-900 truncate">{file.name}</div>
+                      <div className="text-xs text-gray-500">{formatFileSize(file.size)}</div>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => handleRemoveAttachment(file.id)}
+                      className="p-1 text-gray-400 hover:text-red-500"
+                    >
+                      ✕
+                    </button>
+                  </div>
+                ))}
               </div>
             )}
           </div>

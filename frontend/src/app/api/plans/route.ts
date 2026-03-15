@@ -48,7 +48,8 @@ export async function POST(request: NextRequest) {
       customDays, 
       reminderTime,
       startTime,
-      endTime 
+      endTime,
+      attachments,
     } = body
 
     if (!userId || !title) {
@@ -69,6 +70,7 @@ export async function POST(request: NextRequest) {
         reminderTime,
         startTime,
         endTime,
+        attachments,
       },
     })
 
