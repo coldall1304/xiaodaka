@@ -11,6 +11,9 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: '缺少用户ID' }, { status: 400 })
     }
 
+    const today = new Date()
+    today.setHours(0, 0, 0, 0)
+
     // 获取总打卡次数
     const totalCheckIns = await prisma.checkIn.count({
       where: { userId },
@@ -28,14 +31,33 @@ export async function GET(request: NextRequest) {
     })
 
     // 获取今日打卡
-    const today = new Date()
-    today.setHours(0, 0, 0, 0)
     const todayCheckIns = await prisma.checkIn.count({
       where: {
         userId,
         date: { gte: today },
       },
     })
+
+    // 获取今日学习时间（分钟）
+    const todayStudyCheckIns = await prisma.checkIn.findMany({
+      where: {
+        userId,
+        date: { gte: today },
+        duration: { not: null },
+      },
+      select: { duration: true, plan: { select: { category: true } } },
+    })
+
+    const todayStudyTime = todayStudyCheckIns
+      .filter(c => c.plan?.category === 'study')
+      .reduce((sum, c) => sum + (c.duration || 0), 0)
+
+    const todayExerciseTime = todayStudyCheckIns
+      .filter(c => c.plan?.category === 'exercise')
+      .reduce((sum, c) => sum + (c.duration || 0), 0)
+
+    // 计算今日完成率
+    const todayCompletionRate = activePlans > 0 ? Math.round((todayCheckIns / activePlans) * 100) : 0
 
     // 计算当前连续打卡天数
     const checkIns = await prisma.checkIn.findMany({
@@ -106,6 +128,10 @@ export async function GET(request: NextRequest) {
       currentStreak,
       longestStreak,
       weekStudyTime,
+      // 新增字段
+      todayStudyTime,
+      todayExerciseTime,
+      todayCompletionRate,
     })
   } catch (error) {
     console.error('Get stats error:', error)

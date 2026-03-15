@@ -1,6 +1,50 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 
+// 计算积分
+function calculatePoints(
+  completedAt: Date,
+  duration?: number | null,
+  startTime?: string | null
+): number {
+  let points = 1 // 基础积分：1星
+
+  // 时间奖励
+  if (duration) {
+    if (duration >= 60) {
+      points += 2 // 60分钟+2星
+    } else if (duration >= 30) {
+      points += 1 // 30分钟+1星
+    }
+  }
+
+  // 早起加成（6:00-8:00）
+  const hour = completedAt.getHours()
+  if (hour >= 6 && hour < 8) {
+    points = Math.round(points * 1.2) // ×1.2倍
+  }
+
+  // 周末加成
+  const dayOfWeek = completedAt.getDay()
+  if (dayOfWeek === 0 || dayOfWeek === 6) {
+    points = Math.round(points * 1.5) // ×1.5倍
+  }
+
+  // 如果计划设置了开始时间，检查是否按时开始（额外奖励）
+  if (startTime) {
+    const [startHour, startMin] = startTime.split(':').map(Number)
+    const startMinutes = startHour * 60 + startMin
+    const completedMinutes = hour * 60 + completedAt.getMinutes()
+    const diff = Math.abs(completedMinutes - startMinutes)
+    
+    if (diff <= 30) { // 30分钟内打卡，额外奖励
+      points += 1
+    }
+  }
+
+  return points
+}
+
 // GET /api/checkins - 获取打卡记录
 export async function GET(request: NextRequest) {
   try {
@@ -46,6 +90,15 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: '缺少必要参数' }, { status: 400 })
     }
 
+    // 获取计划信息
+    const plan = await prisma.plan.findUnique({
+      where: { id: planId },
+    })
+
+    if (!plan) {
+      return NextResponse.json({ error: '计划不存在' }, { status: 404 })
+    }
+
     // 检查今天是否已打卡
     const today = new Date()
     today.setHours(0, 0, 0, 0)
@@ -56,18 +109,38 @@ export async function POST(request: NextRequest) {
       },
     })
 
+    const completedAt = new Date()
+
     if (existing) {
       // 更新现有记录
       const updated = await prisma.checkIn.update({
         where: { id: existing.id },
         data: {
-          completedAt: new Date(),
+          completedAt,
           note,
           duration: duration || existing.duration,
         },
       })
-      return NextResponse.json({ checkIn: updated, updated: true })
+
+      // 重新计算积分
+      const points = calculatePoints(completedAt, duration || existing.duration, plan.startTime)
+
+      return NextResponse.json({ 
+        checkIn: updated, 
+        updated: true,
+        points,
+        pointsDetail: {
+          base: 1,
+          timeBonus: duration && duration >= 30 ? (duration >= 60 ? 2 : 1) : 0,
+          earlyBird: completedAt.getHours() >= 6 && completedAt.getHours() < 8,
+          weekend: completedAt.getDay() === 0 || completedAt.getDay() === 6,
+          onTime: plan.startTime ? true : false,
+        }
+      })
     }
+
+    // 计算积分
+    const points = calculatePoints(completedAt, duration, plan.startTime)
 
     // 创建新打卡记录
     const checkIn = await prisma.checkIn.create({
@@ -75,7 +148,7 @@ export async function POST(request: NextRequest) {
         planId,
         userId,
         date: today,
-        completedAt: new Date(),
+        completedAt,
         note,
         duration,
       },
@@ -85,12 +158,24 @@ export async function POST(request: NextRequest) {
     await prisma.pointHistory.create({
       data: {
         userId,
-        points: 10,
+        points,
         reason: '完成打卡',
+        relatedId: checkIn.id,
       },
     })
 
-    return NextResponse.json({ checkIn, created: true, points: 10 })
+    return NextResponse.json({ 
+      checkIn, 
+      created: true, 
+      points,
+      pointsDetail: {
+        base: 1,
+        timeBonus: duration && duration >= 30 ? (duration >= 60 ? 2 : 1) : 0,
+        earlyBird: completedAt.getHours() >= 6 && completedAt.getHours() < 8,
+        weekend: completedAt.getDay() === 0 || completedAt.getDay() === 6,
+        onTime: plan.startTime ? true : false,
+      }
+    })
   } catch (error) {
     console.error('Create check-in error:', error)
     return NextResponse.json({ error: '打卡失败' }, { status: 500 })
@@ -121,12 +206,13 @@ export async function DELETE(request: NextRequest) {
       where: { id: checkInId },
     })
 
-    // 扣除积分
+    // 扣除积分（假设固定扣除，实际应该记录原始积分）
     await prisma.pointHistory.create({
       data: {
         userId: checkIn.userId,
         points: -10,
         reason: '取消打卡',
+        relatedId: checkInId,
       },
     })
 

@@ -30,6 +30,14 @@ export default function DashboardPage() {
   const completedToday = plans.filter(p => p.todayCompleted).length
   const totalPlans = plans.length
 
+  // 格式化时间（分钟 -> X小时X分钟）
+  const formatTime = (minutes: number) => {
+    if (minutes < 60) return `${minutes}m`
+    const hours = Math.floor(minutes / 60)
+    const mins = minutes % 60
+    return mins > 0 ? `${hours}h${mins}m` : `${hours}h`
+  }
+
   if (loading) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-gray-50">
@@ -50,7 +58,27 @@ export default function DashboardPage() {
       />
 
       <main className="max-w-6xl mx-auto px-4 py-6 space-y-6">
-        {/* Stats Cards */}
+        {/* Stats Cards - 对标原网站 */}
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+          <Card className="text-center p-4">
+            <div className="text-sm text-gray-500 mb-1">今日学习时间</div>
+            <div className="text-2xl font-bold text-primary-600">{formatTime(stats?.todayStudyTime || 0)}</div>
+          </Card>
+          <Card className="text-center p-4">
+            <div className="text-sm text-gray-500 mb-1">运动户外时间</div>
+            <div className="text-2xl font-bold text-green-600">{formatTime(stats?.todayExerciseTime || 0)}</div>
+          </Card>
+          <Card className="text-center p-4">
+            <div className="text-sm text-gray-500 mb-1">今日任务数量</div>
+            <div className="text-2xl font-bold text-gray-800">{completedToday}/{totalPlans}</div>
+          </Card>
+          <Card className="text-center p-4">
+            <div className="text-sm text-gray-500 mb-1">今日完成率</div>
+            <div className="text-2xl font-bold text-orange-500">{stats?.todayCompletionRate || 0}%</div>
+          </Card>
+        </div>
+
+        {/* Second Row Stats */}
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
           <Card className="text-center p-4">
             <div className="text-3xl mb-1">📚</div>
@@ -63,9 +91,9 @@ export default function DashboardPage() {
             <div className="text-sm text-gray-500">连续天数</div>
           </Card>
           <Card className="text-center p-4">
-            <div className="text-3xl mb-1">✅</div>
-            <div className="text-2xl font-bold text-green-500">{completedToday}/{totalPlans}</div>
-            <div className="text-sm text-gray-500">今日任务</div>
+            <div className="text-3xl mb-1">📅</div>
+            <div className="text-2xl font-bold text-gray-800">{stats?.activePlans || 0}</div>
+            <div className="text-sm text-gray-500">活跃计划</div>
           </Card>
           <Card className="text-center p-4">
             <div className="text-3xl mb-1">🏆</div>
