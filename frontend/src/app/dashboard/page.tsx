@@ -9,6 +9,7 @@ import { usePlans } from '@/hooks/usePlans'
 import { useStats } from '@/hooks/useStats'
 import AddPlanModal from '@/components/AddPlanModal'
 import AIPlanModal from '@/components/AIPlanModal'
+import BatchPlanModal from '@/components/BatchPlanModal'
 
 export default function DashboardPage() {
   const { user, loading: authLoading } = useAuth()
@@ -16,6 +17,7 @@ export default function DashboardPage() {
   const { stats, loading: statsLoading } = useStats(user?.id)
   const [showAddModal, setShowAddModal] = useState(false)
   const [showAIModal, setShowAIModal] = useState(false)
+  const [showBatchModal, setShowBatchModal] = useState(false)
 
   const loading = authLoading || plansLoading || statsLoading
 
@@ -26,10 +28,7 @@ export default function DashboardPage() {
 
   const handleAIGenerated = async (planData: any) => {
     if (planData.edit) {
-      // 打开编辑模态框
       setShowAddModal(true)
-      // 预填充数据
-      // TODO: 传递数据给 AddPlanModal
     } else {
       await addPlan(planData)
     }
@@ -139,16 +138,23 @@ export default function DashboardPage() {
             <div className="flex gap-2">
               <button
                 onClick={() => setShowAIModal(true)}
-                className="px-4 py-2 bg-gradient-to-r from-purple-500 to-pink-500 text-white rounded-lg hover:from-purple-600 hover:to-pink-600 transition flex items-center gap-1"
+                className="px-3 py-2 bg-gradient-to-r from-purple-500 to-pink-500 text-white rounded-lg hover:from-purple-600 hover:to-pink-600 transition flex items-center gap-1 text-sm"
               >
                 <span>🤖</span>
                 AI创建
               </button>
               <button
-                onClick={() => setShowAddModal(true)}
-                className="px-4 py-2 bg-primary-600 text-white rounded-lg hover:bg-primary-700 transition"
+                onClick={() => setShowBatchModal(true)}
+                className="px-3 py-2 bg-gray-600 text-white rounded-lg hover:bg-gray-700 transition flex items-center gap-1 text-sm"
               >
-                + 添加计划
+                <span>📋</span>
+                批量添加
+              </button>
+              <button
+                onClick={() => setShowAddModal(true)}
+                className="px-4 py-2 bg-primary-600 text-white rounded-lg hover:bg-primary-700 transition text-sm"
+              >
+                + 添加
               </button>
             </div>
           </div>
@@ -160,14 +166,21 @@ export default function DashboardPage() {
               <div className="flex gap-3 justify-center">
                 <button
                   onClick={() => setShowAIModal(true)}
-                  className="px-6 py-2 bg-gradient-to-r from-purple-500 to-pink-500 text-white rounded-lg hover:from-purple-600 hover:to-pink-600 flex items-center gap-2"
+                  className="px-4 py-2 bg-gradient-to-r from-purple-500 to-pink-500 text-white rounded-lg hover:from-purple-600 hover:to-pink-600 flex items-center gap-2 text-sm"
                 >
                   <span>🤖</span>
                   AI 创建
                 </button>
                 <button
+                  onClick={() => setShowBatchModal(true)}
+                  className="px-4 py-2 bg-gray-600 text-white rounded-lg hover:bg-gray-700 flex items-center gap-2 text-sm"
+                >
+                  <span>📋</span>
+                  批量添加
+                </button>
+                <button
                   onClick={() => setShowAddModal(true)}
-                  className="px-6 py-2 bg-primary-600 text-white rounded-lg hover:bg-primary-700"
+                  className="px-4 py-2 bg-primary-600 text-white rounded-lg hover:bg-primary-700 text-sm"
                 >
                   手动创建
                 </button>
@@ -222,6 +235,15 @@ export default function DashboardPage() {
         isOpen={showAIModal}
         onClose={() => setShowAIModal(false)}
         onGenerated={handleAIGenerated}
+      />
+
+      <BatchPlanModal
+        isOpen={showBatchModal}
+        onClose={() => setShowBatchModal(false)}
+        onCreated={() => {
+          // 刷新计划列表
+          window.location.reload()
+        }}
       />
     </div>
   )
