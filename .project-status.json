@@ -1,0 +1,42 @@
+{
+  "name": "小打卡",
+  "status": "testing",
+  "progress": 99,
+  "current_stage": "测试部署",
+  "stages": {
+    "网站分析": { "status": "completed", "progress": 100 },
+    "技术选型": { "status": "completed", "progress": 100 },
+    "前端开发": { "status": "completed", "progress": 100 },
+    "后端开发": { "status": "completed", "progress": 100 },
+    "测试部署": { "status": "in_progress", "progress": 80 }
+  },
+  "environment": {
+    "local": {
+      "status": "running",
+      "url": "http://192.168.1.101:3000",
+      "database": "PostgreSQL (Docker)"
+    },
+    "supabase": {
+      "status": "connection_failed",
+      "error": "server closed connection",
+      "needs_action": "检查 Supabase 后台项目状态"
+    }
+  },
+  "files": {
+    "pages": 9,
+    "apis": 12,
+    "components": 12,
+    "hooks": 3,
+    "libs": 9,
+    "total": 47
+  },
+  "blocking_issues": [
+    {
+      "issue": "Supabase 连接失败",
+      "action_required": "老板检查 Supabase 后台",
+      "alternatives": ["创建新 Supabase 项目", "使用 Railway/Neon 数据库"]
+    }
+  ],
+  "last_updated": "2026-03-15T18:30:00+08:00",
+  "next_report": "2026-03-15T18:45:00+08:00"
+}

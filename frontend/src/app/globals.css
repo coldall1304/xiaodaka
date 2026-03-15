@@ -1,0 +1,263 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  /* CSS Variables for dynamic theming */
+  --color-primary: #3B82F6;
+  --color-primary-dark: #2563EB;
+  --color-success: #10B981;
+  --color-danger: #EF4444;
+  --color-warning: #F59E0B;
+  --color-background: #F3F4F6;
+  --color-card: #FFFFFF;
+  --color-text-primary: #1F2937;
+  --color-text-secondary: #6B7280;
+  --color-text-tertiary: #9CA3AF;
+  --color-border: #E5E7EB;
+}
+
+@layer base {
+  * {
+    @apply box-border;
+  }
+
+  html {
+    @apply antialiased;
+  }
+
+  body {
+    @apply bg-gray-100 text-gray-800 font-sans;
+    font-feature-settings: "tnum";
+  }
+
+  /* Custom scrollbar */
+  ::-webkit-scrollbar {
+    width: 6px;
+    height: 6px;
+  }
+
+  ::-webkit-scrollbar-track {
+    @apply bg-transparent;
+  }
+
+  ::-webkit-scrollbar-thumb {
+    @apply bg-gray-300 rounded-full;
+  }
+
+  ::-webkit-scrollbar-thumb:hover {
+    @apply bg-gray-400;
+  }
+}
+
+@layer components {
+  /* Button Styles */
+  .btn {
+    @apply inline-flex items-center justify-center px-6 py-2.5 rounded-lg font-medium transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed;
+  }
+
+  .btn-primary {
+    @apply btn bg-gradient-primary text-white hover:shadow-lg hover:brightness-110 focus:ring-primary-500;
+  }
+
+  .btn-secondary {
+    @apply btn bg-white text-gray-600 border border-gray-200 hover:bg-gray-50 hover:border-gray-300 focus:ring-gray-300;
+  }
+
+  .btn-ghost {
+    @apply btn bg-transparent text-gray-600 hover:bg-gray-100 focus:ring-gray-300;
+  }
+
+  .btn-success {
+    @apply btn bg-success-500 text-white hover:bg-success-600 focus:ring-success-500;
+  }
+
+  .btn-danger {
+    @apply btn bg-danger-500 text-white hover:bg-danger-600 focus:ring-danger-500;
+  }
+
+  /* Input Styles */
+  .input {
+    @apply w-full px-4 py-3 bg-white border border-gray-200 rounded-lg text-gray-800 placeholder-gray-400 transition-all duration-200 focus:outline-none focus:border-primary-500 focus:shadow-input;
+  }
+
+  .input-with-icon {
+    @apply input pl-11;
+  }
+
+  /* Card Styles */
+  .card {
+    @apply bg-white rounded-xl shadow-card transition-shadow duration-200;
+  }
+
+  .card-hover {
+    @apply card hover:shadow-card-hover;
+  }
+
+  .card-stat {
+    @apply card p-5 flex flex-col items-center justify-center text-center;
+  }
+
+  .card-function {
+    @apply card-hover p-4 flex flex-col items-center justify-center cursor-pointer;
+  }
+
+  .card-habit {
+    @apply card p-4 flex items-center justify-between;
+  }
+
+  /* Badge Styles */
+  .badge {
+    @apply inline-flex items-center px-2 py-0.5 rounded text-xs font-medium;
+  }
+
+  .badge-primary {
+    @apply badge bg-primary-100 text-primary-600;
+  }
+
+  .badge-success {
+    @apply badge bg-success-100 text-success-600;
+  }
+
+  .badge-danger {
+    @apply badge bg-danger-100 text-danger-600;
+  }
+
+  .badge-warning {
+    @apply badge bg-warning-100 text-warning-600;
+  }
+
+  .badge-purple {
+    @apply badge bg-purple-100 text-purple-600;
+  }
+
+  /* Tab Styles */
+  .tab {
+    @apply px-4 py-2 text-sm font-medium text-gray-500 rounded-lg transition-all duration-200 cursor-pointer hover:text-gray-700 hover:bg-gray-100;
+  }
+
+  .tab-active {
+    @apply tab bg-white text-primary-600 shadow-sm;
+  }
+
+  /* Tag Styles */
+  .tag {
+    @apply inline-flex items-center px-3 py-1 rounded-full text-sm font-medium transition-all duration-200 cursor-pointer;
+  }
+
+  .tag-default {
+    @apply tag bg-gray-100 text-gray-600 hover:bg-gray-200;
+  }
+
+  .tag-active {
+    @apply tag bg-primary-500 text-white;
+  }
+
+  /* Icon Container */
+  .icon-circle {
+    @apply flex items-center justify-center rounded-full;
+  }
+
+  .icon-circle-sm {
+    @apply icon-circle w-8 h-8;
+  }
+
+  .icon-circle-md {
+    @apply icon-circle w-10 h-10;
+  }
+
+  .icon-circle-lg {
+    @apply icon-circle w-12 h-12;
+  }
+
+  /* Week Calendar */
+  .week-day {
+    @apply flex flex-col items-center justify-center w-14 h-16 rounded-xl cursor-pointer transition-all duration-200;
+  }
+
+  .week-day-active {
+    @apply week-day bg-primary-500 text-white;
+  }
+
+  .week-day-inactive {
+    @apply week-day bg-white text-gray-600 hover:bg-gray-50;
+  }
+
+  /* Auth Page */
+  .auth-container {
+    @apply min-h-screen bg-gradient-primary flex items-center justify-center p-4;
+  }
+
+  .auth-card {
+    @apply w-full max-w-md bg-white rounded-2xl shadow-auth p-8;
+  }
+
+  /* Dashboard Header */
+  .dashboard-header {
+    @apply bg-gradient-primary text-white;
+  }
+
+  /* Stats Grid */
+  .stats-grid {
+    @apply grid grid-cols-2 md:grid-cols-4 gap-4;
+  }
+
+  /* Functions Grid */
+  .functions-grid {
+    @apply grid grid-cols-4 gap-4;
+  }
+
+  /* Habits List */
+  .habits-list {
+    @apply space-y-3;
+  }
+
+  /* Check Button */
+  .btn-check {
+    @apply px-4 py-2 bg-primary-500 text-white text-sm font-medium rounded-lg hover:bg-primary-600 transition-colors duration-200 flex items-center gap-1;
+  }
+
+  .btn-check-completed {
+    @apply px-4 py-2 bg-success-500 text-white text-sm font-medium rounded-lg cursor-default flex items-center gap-1;
+  }
+
+  .btn-check-progress {
+    @apply px-4 py-2 bg-primary-500 text-white text-sm font-medium rounded-lg hover:bg-primary-600 transition-colors duration-200;
+  }
+}
+
+@layer utilities {
+  /* Text Gradient */
+  .text-gradient {
+    @apply bg-clip-text text-transparent bg-gradient-primary;
+  }
+
+  /* Animation */
+  .animate-fade-in {
+    animation: fadeIn 0.3s ease-out;
+  }
+
+  .animate-slide-up {
+    animation: slideUp 0.3s ease-out;
+  }
+
+  @keyframes fadeIn {
+    from {
+      opacity: 0;
+    }
+    to {
+      opacity: 1;
+    }
+  }
+
+  @keyframes slideUp {
+    from {
+      opacity: 0;
+      transform: translateY(10px);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+}
