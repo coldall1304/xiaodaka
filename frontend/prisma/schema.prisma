@@ -9,16 +9,17 @@ datasource db {
 }
 
 model User {
-  id        String         @id @default(cuid())
-  email     String         @unique
-  password  String
-  name      String
-  avatar    String?
-  createdAt DateTime       @default(now())
-  updatedAt DateTime       @updatedAt
-  checkIns  CheckIn[]
-  plans     Plan[]
-  points    PointHistory[]
+  id           String         @id @default(cuid())
+  email        String         @unique
+  password     String
+  name         String
+  avatar       String?
+  createdAt    DateTime       @default(now())
+  updatedAt    DateTime       @updatedAt
+  checkIns     CheckIn[]
+  plans        Plan[]
+  points       PointHistory[]
+  membership   Membership?
 
   @@map("users")
 }
@@ -37,7 +38,7 @@ model Plan {
   reminderTime String?
   startTime    String?
   endTime      String?
-  attachments  Json?     // 附件列表 [{id, name, type, size, url}]
+  attachments  Json?
   isActive     Boolean   @default(true)
   targetDays   Int?
   createdAt    DateTime  @default(now())
@@ -82,6 +83,23 @@ model PointHistory {
   @@map("point_history")
 }
 
+model Membership {
+  id           String   @id @default(cuid())
+  userId       String   @unique
+  type         String   @default("free") // free, monthly, yearly, lifetime
+  startDate    DateTime @default(now())
+  endDate      DateTime?
+  isActive     Boolean  @default(true)
+  autoRenew    Boolean  @default(false)
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([isActive, endDate])
+  @@map("memberships")
+}
+
 model Streak {
   id        String   @id @default(cuid())
   userId    String
@@ -108,4 +126,19 @@ model UserSettings {
   updatedAt           DateTime @updatedAt
 
   @@map("user_settings")
+}
+
+model MembershipCode {
+  id          String   @id @default(cuid())
+  code        String   @unique
+  type        String   // monthly, yearly, lifetime
+  durationDays Int
+  isUsed      Boolean  @default(false)
+  usedBy      String?
+  usedAt      DateTime?
+  expiresAt   DateTime?
+  createdAt   DateTime @default(now())
+
+  @@index([code, isUsed])
+  @@map("membership_codes")
 }

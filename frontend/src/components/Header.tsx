@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { cn } from "@/lib/utils";
 
 interface HeaderProps {
@@ -8,6 +8,7 @@ interface HeaderProps {
   totalPlans?: number;
   userName?: string;
   userAvatar?: string;
+  userId?: string;
   onInstall?: () => void;
   className?: string;
 }
@@ -17,10 +18,25 @@ export function Header({
   totalPlans = 0,
   userName,
   userAvatar,
+  userId,
   onInstall,
   className,
 }: HeaderProps) {
   const [showUserMenu, setShowUserMenu] = useState(false);
+  const [membershipDays, setMembershipDays] = useState(0);
+
+  useEffect(() => {
+    if (userId) {
+      fetch(`/api/membership?userId=${userId}`)
+        .then(res => res.json())
+        .then(data => {
+          if (data.daysRemaining) {
+            setMembershipDays(data.daysRemaining);
+          }
+        })
+        .catch(console.error);
+    }
+  }, [userId]);
 
   return (
     <header className={cn("bg-gradient-primary text-white", className)}>
@@ -41,6 +57,20 @@ export function Header({
 
           {/* Right Actions */}
           <div className="flex items-center gap-3">
+            {/* Membership Badge */}
+            {membershipDays > 0 && (
+              <button className="flex items-center gap-1 px-3 py-1 bg-yellow-400/90 text-yellow-900 rounded-lg text-sm font-medium">
+                <span>👑</span>
+                会员剩余{membershipDays}天
+              </button>
+            )}
+
+            {/* Redeem Button */}
+            <button className="flex items-center gap-1 px-3 py-1 bg-white/20 hover:bg-white/30 rounded-lg text-sm transition">
+              <span>💎</span>
+              兑换
+            </button>
+
             {/* Install Button */}
             {onInstall && (
               <button
