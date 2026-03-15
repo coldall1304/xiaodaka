@@ -40,6 +40,8 @@ model Plan {
   reminderTime String?
   startTime    String?
   endTime      String?
+  duration     Int?      // 时长模式（分钟）
+  customPoints Int?      // 自定义积分
   attachments  Json?
   isActive     Boolean   @default(true)
   targetDays   Int?

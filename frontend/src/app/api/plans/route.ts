@@ -49,6 +49,8 @@ export async function POST(request: NextRequest) {
       reminderTime,
       startTime,
       endTime,
+      duration,
+      customPoints,
       attachments,
     } = body
 
@@ -70,6 +72,8 @@ export async function POST(request: NextRequest) {
         reminderTime,
         startTime,
         endTime,
+        duration,
+        customPoints,
         attachments,
       },
     })

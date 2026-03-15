@@ -23,15 +23,27 @@ const PRESET_CATEGORIES = [
   '运动', '娱乐', '技能', '其他'
 ]
 
+// 默认积分规则
+const DEFAULT_POINT_RULES = [
+  { action: '完成一次打卡', points: 10 },
+  { action: '连续打卡7天', points: 50 },
+  { action: '连续打卡30天', points: 200 },
+  { action: '连续打卡100天', points: 500 },
+]
+
 export default function AddPlanModal({ isOpen, onClose, onAdd }: AddPlanModalProps) {
   const [title, setTitle] = useState('')
   const [description, setDescription] = useState('')
   const [category, setCategory] = useState('')
   const [frequency, setFrequency] = useState('daily')
   const [startDate, setStartDate] = useState(new Date().toISOString().split('T')[0])
+  const [enableTime, setEnableTime] = useState(false)
+  const [timeMode, setTimeMode] = useState<'range' | 'duration'>('range')
   const [startTime, setStartTime] = useState('09:00')
   const [endTime, setEndTime] = useState('10:00')
-  const [enableTime, setEnableTime] = useState(false)
+  const [duration, setDuration] = useState(60) // 分钟
+  const [customPoints, setCustomPoints] = useState(false)
+  const [pointValue, setPointValue] = useState(10)
   const [attachments, setAttachments] = useState<Attachment[]>([])
   const [loading, setLoading] = useState(false)
   const fileInputRef = useRef<HTMLInputElement>(null)
@@ -84,6 +96,13 @@ export default function AddPlanModal({ isOpen, onClose, onAdd }: AddPlanModalPro
     return '📎'
   }
 
+  const formatDuration = (minutes: number) => {
+    if (minutes < 60) return `${minutes}分钟`
+    const hours = Math.floor(minutes / 60)
+    const mins = minutes % 60
+    return mins > 0 ? `${hours}小时${mins}分钟` : `${hours}小时`
+  }
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     setLoading(true)
@@ -102,12 +121,20 @@ export default function AddPlanModal({ isOpen, onClose, onAdd }: AddPlanModalPro
           size: a.size,
           url: a.url,
         })),
+        customPoints: customPoints ? pointValue : null,
       }
 
       if (enableTime) {
-        plan.reminderTime = startTime
-        plan.startTime = startTime
-        plan.endTime = endTime
+        if (timeMode === 'range') {
+          plan.startTime = startTime
+          plan.endTime = endTime
+          plan.reminderTime = startTime
+        } else {
+          // 时长模式：只存储时长
+          plan.duration = duration
+          plan.startTime = null
+          plan.endTime = null
+        }
       }
 
       onAdd(plan)
@@ -116,6 +143,8 @@ export default function AddPlanModal({ isOpen, onClose, onAdd }: AddPlanModalPro
       setDescription('')
       setCategory('')
       setAttachments([])
+      setCustomPoints(false)
+      setPointValue(10)
     } catch (error) {
       console.error('Failed to add plan:', error)
     } finally {
@@ -246,29 +275,129 @@ export default function AddPlanModal({ isOpen, onClose, onAdd }: AddPlanModalPro
             
             {enableTime && (
               <div className="bg-gray-50 p-4 rounded-lg space-y-3">
-                <div className="grid grid-cols-2 gap-3">
-                  <div>
-                    <label className="block text-xs text-gray-600 mb-1">开始时间</label>
-                    <input
-                      type="time"
-                      value={startTime}
-                      onChange={(e) => setStartTime(e.target.value)}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 outline-none"
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-xs text-gray-600 mb-1">结束时间</label>
-                    <input
-                      type="time"
-                      value={endTime}
-                      onChange={(e) => setEndTime(e.target.value)}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 outline-none"
-                    />
-                  </div>
+                {/* 时间模式切换 */}
+                <div className="flex gap-2 mb-3">
+                  <button
+                    type="button"
+                    onClick={() => setTimeMode('range')}
+                    className={`flex-1 py-2 rounded-lg text-sm font-medium transition ${
+                      timeMode === 'range'
+                        ? 'bg-primary-500 text-white'
+                        : 'bg-white text-gray-600 border border-gray-300'
+                    }`}
+                  >
+                    时间段
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setTimeMode('duration')}
+                    className={`flex-1 py-2 rounded-lg text-sm font-medium transition ${
+                      timeMode === 'duration'
+                        ? 'bg-primary-500 text-white'
+                        : 'bg-white text-gray-600 border border-gray-300'
+                    }`}
+                  >
+                    时长
+                  </button>
                 </div>
+
+                {timeMode === 'range' ? (
+                  <div className="grid grid-cols-2 gap-3">
+                    <div>
+                      <label className="block text-xs text-gray-600 mb-1">开始时间</label>
+                      <input
+                        type="time"
+                        value={startTime}
+                        onChange={(e) => setStartTime(e.target.value)}
+                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 outline-none"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-xs text-gray-600 mb-1">结束时间</label>
+                      <input
+                        type="time"
+                        value={endTime}
+                        onChange={(e) => setEndTime(e.target.value)}
+                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 outline-none"
+                      />
+                    </div>
+                  </div>
+                ) : (
+                  <div>
+                    <label className="block text-xs text-gray-600 mb-1">计划时长</label>
+                    <div className="flex items-center gap-3">
+                      <input
+                        type="range"
+                        min="15"
+                        max="480"
+                        step="15"
+                        value={duration}
+                        onChange={(e) => setDuration(parseInt(e.target.value))}
+                        className="flex-1"
+                      />
+                      <div className="text-sm font-medium text-primary-600 w-24 text-center">
+                        {formatDuration(duration)}
+                      </div>
+                    </div>
+                    <div className="flex justify-between text-xs text-gray-400 mt-1">
+                      <span>15分钟</span>
+                      <span>8小时</span>
+                    </div>
+                  </div>
+                )}
                 <p className="text-xs text-gray-500">
-                  💡 设置计划的固定时间段，如 19:00-20:30
+                  💡 {timeMode === 'range' ? '设置计划的固定时间段，如 19:00-20:30' : '设置计划的时长，打卡时记录实际用时'}
                 </p>
+              </div>
+            )}
+          </div>
+
+          {/* 积分设置 */}
+          <div>
+            <div className="flex items-center justify-between mb-2">
+              <label className="text-sm font-medium text-gray-700">
+                🏆 积分设置
+              </label>
+              <label className="flex items-center">
+                <input
+                  type="checkbox"
+                  checked={customPoints}
+                  onChange={(e) => setCustomPoints(e.target.checked)}
+                  className="w-4 h-4 text-primary-600 border-gray-300 rounded focus:ring-primary-500"
+                />
+                <span className="ml-2 text-sm text-gray-600">自定义积分</span>
+              </label>
+            </div>
+
+            {customPoints ? (
+              <div className="bg-orange-50 p-4 rounded-lg">
+                <div className="flex items-center gap-3">
+                  <label className="text-sm text-gray-600">每次打卡获得</label>
+                  <input
+                    type="number"
+                    min="1"
+                    max="100"
+                    value={pointValue}
+                    onChange={(e) => setPointValue(parseInt(e.target.value) || 10)}
+                    className="w-20 px-3 py-2 border border-orange-300 rounded-lg focus:ring-2 focus:ring-primary-500 outline-none"
+                  />
+                  <span className="text-sm text-gray-600">星星</span>
+                </div>
+                <p className="text-xs text-gray-500 mt-2">
+                  💡 自定义积分会覆盖系统默认规则
+                </p>
+              </div>
+            ) : (
+              <div className="bg-gray-50 p-3 rounded-lg">
+                <div className="text-xs text-gray-500 mb-2">系统默认积分规则：</div>
+                <div className="grid grid-cols-2 gap-2">
+                  {DEFAULT_POINT_RULES.map((rule, i) => (
+                    <div key={i} className="flex items-center gap-2 text-xs">
+                      <span className="text-gray-600">{rule.action}</span>
+                      <span className="text-orange-500 font-medium">+{rule.points}</span>
+                    </div>
+                  ))}
+                </div>
               </div>
             )}
           </div>
