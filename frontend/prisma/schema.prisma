@@ -20,6 +20,8 @@ model User {
   plans        Plan[]
   points       PointHistory[]
   membership   Membership?
+  wishes       WishList[]
+  achievements Achievement[]
 
   @@map("users")
 }
@@ -141,4 +143,38 @@ model MembershipCode {
 
   @@index([code, isUsed])
   @@map("membership_codes")
+}
+
+// 愿望清单
+model WishList {
+  id          String   @id @default(cuid())
+  userId      String
+  title       String
+  description String?
+  points      Int      // 所需积分
+  icon        String   @default("🎁")
+  isCompleted Boolean  @default(false)
+  createdAt   DateTime @default(now())
+  completedAt DateTime?
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, isCompleted])
+  @@map("wish_list")
+}
+
+// 成就系统
+model Achievement {
+  id          String   @id @default(cuid())
+  userId      String
+  type        String   // achievement type: first_checkin, streak_7, streak_30, etc.
+  title       String
+  description String
+  icon        String
+  points      Int
+  unlockedAt  DateTime @default(now())
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, type])
+  @@index([userId])
+  @@map("achievements")
 }
